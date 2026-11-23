@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Budget Guard: interactive prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F3F2EE; --panel:#FFFFFF; --panel-2:#FAF9F6; --border:#E1DFD8; --border-strong:#CFCCC2;
+  --ink:#1F1E1B; --ink-2:#5E5C55; --ink-3:#8A877E;
+  --accent:#5B4FD6; --accent-soft:#EEECFB;
+  --s1:#2a78d6; --s2:#1baf7a; --gray-fill:#D9D6CD;
+  --warn:#8A5300; --warn-bg:#FFF4DB; --warn-bd:#F1D79A;
+  --good:#0A6B2C; --good-bg:#E5F3E9; --good-bd:#B7DCC2;
+  --bad:#B42F2E; --bad-bg:#FCEBEA; --bad-bd:#F0C2C1;
+  --radius:8px;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:"IBM Plex Sans",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button{font:inherit;cursor:pointer}
+.proto-ribbon{position:sticky;top:0;z-index:50;background:#1F1E1B;color:#EDEBE4;font-size:12px;padding:6px 16px;display:flex;gap:16px;align-items:center;justify-content:space-between}
+.proto-ribbon b{color:#fff}
+.proto-ribbon .keys{color:#B9B6AC}
+.app{display:grid;grid-template-columns:224px 1fr;min-height:calc(100vh - 30px)}
+/* sidebar */
+.side{background:var(--panel-2);border-right:1px solid var(--border);padding:12px 10px;display:flex;flex-direction:column;gap:2px;position:sticky;top:30px;height:calc(100vh - 30px);overflow:auto}
+.proj{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:8px;background:var(--panel);margin-bottom:10px}
+.proj .av{width:26px;height:26px;border-radius:6px;background:#2F6F5E;color:#fff;display:grid;place-items:center;font-weight:700;font-size:12px}
+.proj .nm{font-weight:600;font-size:13px;line-height:1.2}
+.proj .sub{font-size:11px;color:var(--ink-3)}
+.nav-h{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-3);padding:10px 8px 4px}
+.nav{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;color:var(--ink-2);font-size:13px;border:0;background:none;text-align:left;width:100%}
+.nav svg{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.6}
+.nav:hover{background:#EDEBE5}
+.nav.on{background:var(--panel);color:var(--ink);font-weight:600;box-shadow:0 0 0 1px var(--border)}
+.nav .pill{margin-left:auto}
+.side .foot{margin-top:auto;font-size:11px;color:var(--ink-3);padding:8px}
+/* main */
+.main{display:flex;flex-direction:column;min-width:0}
+.top{display:flex;align-items:center;gap:12px;padding:10px 24px;border-bottom:1px solid var(--border);background:var(--panel);position:sticky;top:30px;z-index:20}
+.crumbs{font-size:13px;color:var(--ink-3)}
+.crumbs b{color:var(--ink);font-weight:600}
+.steps{margin-left:auto;display:flex;gap:4px;align-items:center}
+.step{border:1px solid var(--border);background:var(--panel);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--ink-2);display:flex;gap:6px;align-items:center}
+.step .n{width:18px;height:18px;border-radius:50%;background:#EDEBE5;display:grid;place-items:center;font-size:11px;font-weight:600}
+.step.on{border-color:var(--ink);color:var(--ink);font-weight:600}
+.step.on .n{background:var(--ink);color:#fff}
+.step.done .n{background:var(--good-bg);color:var(--good)}
+.content{padding:24px;max-width:1180px;width:100%}
+.screen{display:none}
+.screen.on{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+h1{font-size:22px;margin:0 0 4px;font-weight:600;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.lede{color:var(--ink-2);margin:0 0 18px;max-width:760px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius)}
+.card-h{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-weight:600}
+.card-h .r{margin-left:auto;font-weight:400;color:var(--ink-3);font-size:12px}
+.card-b{padding:16px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g-forecast{grid-template-columns:1.25fr 1fr}
+.g-cap{grid-template-columns:1fr 340px}
+.btn{border:1px solid var(--border-strong);background:var(--panel);border-radius:6px;padding:7px 12px;font-weight:500;color:var(--ink);display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:#F6F5F1}
+.btn.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.primary:hover{background:#000}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn:focus-visible,.nav:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pill{font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);letter-spacing:.02em}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:4px;border:1px solid}
+.tag.ev{color:var(--good);background:var(--good-bg);border-color:var(--good-bd)}
+.tag.as{color:var(--warn);background:var(--warn-bg);border-color:var(--warn-bd)}
+.tag.hy{color:var(--accent);background:var(--accent-soft);border-color:#D6D2F6}
+.banner{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:8px;border:1px solid}
+.banner.warn{background:var(--warn-bg);border-color:var(--warn-bd);color:#5A3700}
+.banner.bad{background:var(--bad-bg);border-color:var(--bad-bd);color:#6E1716}
+.banner.good{background:var(--good-bg);border-color:var(--good-bd);color:#0B4A20}
+.banner .ic{flex:none;width:20px;height:20px}
+.banner .t{font-weight:600}
+.banner .acts{margin-left:auto;display:flex;gap:8px;flex:none}
+.muted{color:var(--ink-2)}
+.small{font-size:12px}
+.tiny{font-size:11px;color:var(--ink-3)}
+.mono{font-family:var(--mono)}
+.num{font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-3);font-weight:600;text-align:left;padding:8px 12px;border-bottom:1px solid var(--border)}
+td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+td.r,th.r{text-align:right}
+/* recordings list */
+.rec{display:flex;align-items:center;gap:12px}
+.rec .play{width:28px;height:28px;border-radius:50%;background:#EDEBE5;display:grid;place-items:center}
+.rec .play svg{width:12px;height:12px;fill:var(--ink-2)}
+.gaprow td{background:repeating-linear-gradient(45deg,#FAF9F6,#FAF9F6 6px,#F1EFEA 6px,#F1EFEA 12px);color:var(--ink-2);text-align:center;font-size:13px}
+.chip{display:inline-block;font-size:11px;padding:1px 6px;border-radius:4px;background:#EDEBE5;color:var(--ink-2);margin-right:4px}
+.chip.err{background:var(--bad-bg);color:var(--bad)}
+/* modal */
+.scrim{position:fixed;inset:0;background:rgba(20,19,17,.35);display:none;align-items:center;justify-content:center;z-index:100}
+.scrim.on{display:flex}
+.modal{width:440px;max-width:calc(100vw - 32px);background:var(--panel);border-radius:10px;box-shadow:0 20px 60px rgba(0,0,0,.25);overflow:hidden}
+.modal .mh{padding:14px 16px;border-bottom:1px solid var(--border);font-weight:600;display:flex}
+.modal .mh button{margin-left:auto;border:0;background:none;font-size:18px;line-height:1;color:var(--ink-3)}
+.modal .mb{padding:16px}
+.modal .mf{padding:12px 16px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--panel-2)}
+.field{display:flex;align-items:center;border:1px solid var(--border-strong);border-radius:6px;padding:0 10px;height:36px;background:#fff}
+.field span{color:var(--ink-3)}
+.field input{border:0;outline:0;font:inherit;flex:1;padding:0 6px;height:100%;background:none}
+.thought{margin-top:14px;padding:10px 12px;border-left:3px solid var(--ink-3);background:var(--panel-2);font-size:13px;color:var(--ink-2)}
+.thought cite{display:block;font-style:normal;font-size:11px;color:var(--ink-3);margin-top:4px}
+/* toast */
+.toast{position:fixed;right:20px;bottom:20px;width:360px;background:var(--panel);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,.15);padding:14px;z-index:90;transform:translateY(20px);opacity:0;pointer-events:none;transition:.25s}
+.toast.on{transform:none;opacity:1;pointer-events:auto}
+/* forecast */
+.hero-num{font-size:40px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.range-bar{position:relative;height:28px;margin:16px 0 6px}
+.range-bar .track{position:absolute;left:0;right:0;top:12px;height:4px;background:#EDEBE5;border-radius:2px}
+.range-bar .band{position:absolute;top:8px;height:12px;background:#CFE0F5;border-radius:6px}
+.range-bar .med{position:absolute;top:4px;width:3px;height:20px;background:var(--s1);border-radius:2px;transform:translateX(-1px)}
+.range-bar .capmk{position:absolute;top:0;height:28px;border-left:2px dashed var(--ink);}
+.range-bar .capmk span{position:absolute;top:-18px;left:4px;font-size:11px;font-weight:600;white-space:nowrap}
+.range-lbls{display:flex;justify-content:space-between;font-size:12px;color:var(--ink-3)}
+.calc{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.calc select,.calc input{font:inherit;border:1px solid var(--border-strong);border-radius:6px;height:34px;padding:0 8px;background:#fff}
+.calc input{width:110px}
+.calc .ans{font-size:20px;font-weight:600}
+.cant{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.cant div{background:var(--panel-2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:12px}
+/* cap */
+.slider-wrap{display:flex;align-items:center;gap:14px}
+input[type=range]{flex:1;accent-color:var(--ink);height:28px}
+.cap-val{font-size:34px;font-weight:600;min-width:110px;letter-spacing:-.02em}
+.ladder{display:flex;flex-direction:column;gap:0;margin-top:6px}
+.rung{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:10px 0;border-top:1px solid var(--border)}
+.rung:first-child{border-top:0}
+.rung .at{font-family:var(--mono);font-size:12px;font-weight:500;color:var(--ink-2)}
+.rung .what{font-size:13px}
+.rung .what b{display:block}
+.toggle{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-top:1px solid var(--border)}
+.toggle:first-of-type{border-top:0}
+.toggle input{margin-top:3px;accent-color:var(--accent);width:15px;height:15px}
+.toggle .d{font-size:12px;color:var(--ink-3)}
+.prob{display:flex;align-items:baseline;gap:8px}
+.prob .p{font-size:26px;font-weight:600}
+/* charts */
+.chart{position:relative}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{font-family:"IBM Plex Sans",sans-serif;font-size:11px;fill:var(--ink-3)}
+.chart .lbl{fill:var(--ink);font-weight:600}
+.tt{position:absolute;pointer-events:none;background:#1F1E1B;color:#fff;font-size:12px;padding:8px 10px;border-radius:6px;white-space:nowrap;transform:translate(-50%,-100%);margin-top:-10px;display:none;z-index:5;line-height:1.5}
+.tt b{font-weight:600}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);margin-bottom:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+/* spike */
+.seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:7px;overflow:hidden;background:#fff}
+.seg button{border:0;background:none;padding:7px 12px;font-size:13px;color:var(--ink-2);border-right:1px solid var(--border)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--ink);color:#fff;font-weight:500}
+.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.switch{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2)}
+.switch input{accent-color:var(--bad);width:15px;height:15px}
+.outcomes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+.oc{border:1px solid var(--border);border-radius:8px;background:var(--panel);padding:12px 14px;cursor:pointer;transition:.15s}
+.oc:hover{border-color:var(--border-strong)}
+.oc.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink)}
+.oc .h{font-size:12px;color:var(--ink-3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:6px}
+.oc .bill{font-size:28px;font-weight:600;margin:4px 0 6px;letter-spacing:-.02em}
+.oc .row{display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0;border-top:1px dashed var(--border)}
+.oc .row span:first-child{color:var(--ink-2)}
+.ok{color:var(--good);font-weight:600}
+.no{color:var(--bad);font-weight:600}
+.log{max-height:300px;overflow:auto;font-size:12.5px}
+.log .e{display:grid;grid-template-columns:62px 1fr;gap:10px;padding:8px 0;border-top:1px solid var(--border)}
+.log .e:first-child{border-top:0}
+.log .e .d{font-family:var(--mono);font-size:11.5px;color:var(--ink-3)}
+.log .e b{display:block;font-weight:600}
+.lost{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13px}
+.lost div:nth-child(even){text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+/* impact */
+.big{font-size:44px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.arrow{color:var(--ink-3);font-size:28px;margin:0 8px}
+.funnel .fr{display:grid;grid-template-columns:1fr 70px;gap:10px;align-items:center;margin:6px 0}
+.funnel .fb{height:22px;background:var(--s1);border-radius:0 4px 4px 0;position:relative}
+.funnel .fb span{position:absolute;left:8px;top:2px;font-size:12px;color:#fff;font-weight:500;white-space:nowrap}
+.funnel .fb.light{background:#CFE0F5}
+.funnel .fb.light span{color:var(--ink)}
+.funnel .fv{font-size:12px;text-align:right;font-variant-numeric:tabular-nums}
+.eq{font-family:var(--mono);font-size:12.5px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;padding:10px 12px;line-height:1.7}
+.ev-list li{margin:6px 0}
+.ev-list{padding-left:18px;margin:0}
+.notes{position:fixed;left:240px;right:16px;bottom:16px;background:#1F1E1B;color:#EDEBE4;border-radius:10px;padding:12px 16px;font-size:13px;z-index:80;display:none;max-width:900px}
+.notes.on{display:block}
+.notes b{color:#fff}
+.footer-nav{display:flex;justify-content:space-between;margin-top:22px}
+.kbd{font-family:var(--mono);font-size:11px;border:1px solid #55524A;border-radius:3px;padding:0 4px;margin:0 2px}
+@media (max-width:1000px){.app{grid-template-columns:1fr}.side{display:none}.g2,.g3,.g-forecast,.g-cap,.outcomes{grid-template-columns:1fr}.notes{left:16px}.steps .step .lb{display:none}}
+</style>
+</head>
+<body>
+
+<div class="proto-ribbon" role="note">
+  <span><b>Student prototype</b> for the PMC@UCSC case competition · Not a real PostHog product · All data is simulated</span>
+  <span class="keys">Arrow keys <span class="kbd">←</span><span class="kbd">→</span> move between screens · <span class="kbd">N</span> presenter notes</span>
+</div>
+
+<div class="app">
+  <aside class="side" aria-label="App navigation">
+    <div class="proj">
+      <div class="av">L</div>
+      <div><div class="nm">Leo's app</div><div class="sub">Production · Free plan</div></div>
+    </div>
+    <div class="nav-h">Products</div>
+    <button class="nav"><svg viewBox="0 0 16 16"><path d="M2 7l6-5 6 5v7H2z"/></svg>Home</button>
+    <button class="nav"><svg viewBox="0 0 16 16"><path d="M2 14V8M6 14V4M10 14V9M14 14V2"/></svg>Product analytics</button>
+    <button class="nav"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c2 2 2 10 0 12M8 2c-2 2-2 10 0 12"/></svg>Web analytics</button>
+    <button class="nav" data-nav="replay"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="2"/><path d="M7 6l3 2-3 2z"/></svg>Session replay</button>
+    <button class="nav"><svg viewBox="0 0 16 16"><path d="M3 14V2M3 3h9l-2 3 2 3H3"/></svg>Feature flags</button>
+    <button class="nav"><svg viewBox="0 0 16 16"><path d="M6 2v5L2 14h12L10 7V2M5 2h6"/></svg>Experiments</button>
+    <button class="nav"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="6"/><path d="M8 5v4M8 11v.5"/></svg>Error tracking</button>
+    <button class="nav"><svg viewBox="0 0 16 16"><path d="M3 3h10v8H7l-3 3v-3H3z"/></svg>Surveys</button>
+    <div class="nav-h">Organization</div>
+    <button class="nav" data-nav="billing"><svg viewBox="0 0 16 16"><rect x="2" y="4" width="12" height="9" rx="1.5"/><path d="M2 7h12"/></svg>Billing</button>
+    <button class="nav" data-nav="guard"><svg viewBox="0 0 16 16"><path d="M8 2l5 2v4c0 3-2 5-5 6-3-1-5-3-5-6V4z"/><path d="M6 8l1.5 1.5L10.5 6.5"/></svg>Budget Guard <span class="pill">New</span></button>
+    <button class="nav"><svg viewBox="0 0 16 16"><circle cx="8" cy="8" r="2"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2M3.8 3.8l1.4 1.4M10.8 10.8l1.4 1.4M3.8 12.2l1.4-1.4M10.8 5.2l1.4-1.4"/></svg>Settings</button>
+    <div class="nav-h" id="internal-h" style="display:none">Internal</div>
+    <button class="nav" data-nav="internal" id="internal-nav" style="display:none"><svg viewBox="0 0 16 16"><path d="M2 13l4-4 3 3 5-6"/></svg>Growth review</button>
+    <div class="foot">Prices on these screens are illustrative, made up for this prototype.</div>
+  </aside>
+
+  <div class="main">
+    <div class="top">
+      <div class="crumbs" id="crumbs"></div>
+      <nav class="steps" id="steps" aria-label="Demo steps"></nav>
+    </div>
+
+    <div class="content">
+
+      <!-- 1. THE MOMENT -->
+      <section class="screen" id="s-problem" data-title="Session replay" data-crumb="Leo's app / <b>Session replay</b>" data-nav="replay">
+        <h1>Session replay</h1>
+        <p class="lede">Watch how real users moved through your app.</p>
+
+        <div class="banner warn" style="margin-bottom:16px">
+          <svg class="ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3l8 14H2z"/><path d="M10 8v4M10 14.5v.5"/></svg>
+          <div>
+            <div class="t">Recording paused. You've used all 5,000 free recordings this month.</div>
+            <div class="small">Paused since Mar 19. Recording restarts on <b>April 1, in 12 days.</b> No new sessions are being saved.</div>
+          </div>
+          <div class="acts">
+            <button class="btn sm" id="open-limit">Set billing limit</button>
+            <button class="btn sm primary" id="open-card">Add a card</button>
+          </div>
+        </div>
+
+        <div class="grid g-forecast">
+          <div class="card">
+            <div class="card-h">Recent recordings <span class="r">Filter: last 14 days</span></div>
+            <table>
+              <thead><tr><th>Session</th><th>User</th><th>Date</th><th class="r">Duration</th></tr></thead>
+              <tbody>
+                <tr class="gaprow"><td colspan="4">No recordings from Mar 19 to Mar 31. Recording was paused.</td></tr>
+                <tr><td><div class="rec"><div class="play"><svg viewBox="0 0 10 10"><path d="M2 1l7 4-7 4z"/></svg></div><div><div>/pricing → /signup</div><div class="tiny"><span class="chip">Chrome</span><span class="chip">US</span></div></div></div></td><td class="small">anonymous</td><td class="small num">Mar 19, 11:42</td><td class="r small num">3m 12s</td></tr>
+                <tr><td><div class="rec"><div class="play"><svg viewBox="0 0 10 10"><path d="M2 1l7 4-7 4z"/></svg></div><div><div>/app/projects</div><div class="tiny"><span class="chip">Safari</span><span class="chip err">1 error</span></div></div></div></td><td class="small">maya@kelpco.io</td><td class="small num">Mar 19, 11:37</td><td class="r small num">8m 04s</td></tr>
+                <tr><td><div class="rec"><div class="play"><svg viewBox="0 0 10 10"><path d="M2 1l7 4-7 4z"/></svg></div><div><div>/ → /docs</div><div class="tiny"><span class="chip">Firefox</span><span class="chip">DE</span></div></div></div></td><td class="small">anonymous</td><td class="small num">Mar 19, 11:31</td><td class="r small num">0m 48s</td></tr>
+                <tr><td><div class="rec"><div class="play"><svg viewBox="0 0 10 10"><path d="M2 1l7 4-7 4z"/></svg></div><div><div>/checkout</div><div class="tiny"><span class="chip">Chrome</span><span class="chip">CA</span></div></div></div></td><td class="small">sam@brightline.dev</td><td class="small num">Mar 19, 11:20</td><td class="r small num">2m 31s</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="card">
+            <div class="card-h">Support inbox <span class="r">Mar 24</span></div>
+            <div class="card-b">
+              <div class="small muted">From <b>jordan@harborly.com</b>, a paying customer</div>
+              <p style="margin:8px 0 12px">"The checkout button does nothing on Safari. I tried three times. Can you look?"</p>
+              <button class="btn sm" id="find-session">Find Jordan's session</button>
+              <div id="find-result" style="display:none;margin-top:12px">
+                <div class="banner bad">
+                  <svg class="ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="7"/><path d="M7 7l6 6M13 7l-6 6"/></svg>
+                  <div><div class="t">0 recordings match</div><div class="small">Jordan's visit on Mar 24 wasn't recorded because recording was paused.</div></div>
+                </div>
+                <div class="thought">Leo spent two days reproducing the bug by hand.<cite>Case interview E3.4</cite></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="footer-nav"><span></span><button class="btn accent" data-go="1">What if Leo knew the cost? →</button></div>
+      </section>
+
+      <!-- 2. FORECAST -->
+      <section class="screen" id="s-forecast" data-crumb="Organization / Billing / <b>Budget Guard</b>" data-nav="guard">
+        <h1>
+          <svg width="22" height="22" viewBox="0 0 16 16" fill="none" stroke="var(--accent)" stroke-width="1.6"><path d="M8 2l5 2v4c0 3-2 5-5 6-3-1-5-3-5-6V4z"/><path d="M6 8l1.5 1.5L10.5 6.5"/></svg>
+          Budget Guard <span class="pill">New</span>
+        </h1>
+        <p class="lede">See next month's bill before you turn anything on. Set a cap you'll never go past. If you get close, we keep your most important data instead of switching everything off.</p>
+
+        <div class="grid g-forecast">
+          <div class="card">
+            <div class="card-h">April forecast at your real traffic <span class="r">based on Feb 1 to Mar 31</span></div>
+            <div class="card-b">
+              <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+                <div><div class="tiny">Most likely bill</div><div class="hero-num num" id="fc-med">$25</div></div>
+                <div class="muted" style="padding-bottom:4px">Likely between <b class="num" id="fc-lo">$10</b> and <b class="num" id="fc-hi">$42</b></div>
+              </div>
+              <div class="range-bar" aria-hidden="true">
+                <div class="track"></div><div class="band" id="rb-band"></div><div class="med" id="rb-med"></div>
+              </div>
+              <div class="range-lbls"><span>$0</span><span>$25</span><span>$50</span><span>$75</span></div>
+              <p class="small muted" style="margin:12px 0 0">The range covers 8 in 10 months like your last two. Your traffic is only a little over the free limits, so a small change in traffic moves the bill a lot. That's why the range is wide.</p>
+
+              <table style="margin-top:14px">
+                <thead><tr><th>Product</th><th class="r">Free each month</th><th class="r">Forecast usage</th><th class="r">Forecast cost</th></tr></thead>
+                <tbody id="fc-table"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="grid" style="align-content:start">
+            <div class="card">
+              <div class="card-h">What would more usage cost?</div>
+              <div class="card-b">
+                <div class="calc">
+                  <input type="number" id="calc-n" value="5000" min="0" step="500" aria-label="Amount">
+                  <select id="calc-kind" aria-label="Usage type"><option value="rec">more recordings</option><option value="evt">more events</option></select>
+                  <span class="muted">=</span><span class="ans num" id="calc-ans">$25.00</span>
+                </div>
+                <div class="tiny" style="margin-top:8px" id="calc-note">Once you're past the free 5,000 recordings, each extra one costs $0.005.</div>
+                <div class="thought">"What do 5,000 more recordings cost? I'd have to go do math."<cite>Leo, case interview E3.3</cite></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">What this forecast can't see</div>
+              <div class="card-b">
+                <div class="small muted">The forecast learns from your normal weeks. It can't predict events like these:</div>
+                <div class="cant"><div><b>Bot traffic</b><br>a scraper or attack</div><div><b>A launch</b><br>Product Hunt, press</div><div><b>New tracking</b><br>you add more events</div></div>
+                <div class="small" style="margin-top:10px">Your cap covers these.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-nav"><button class="btn" data-go="0">← Back</button><button class="btn accent" data-go="2">Set a cap →</button></div>
+      </section>
+
+      <!-- 3. CAP -->
+      <section class="screen" id="s-cap" data-crumb="Organization / Billing / <b>Budget Guard</b>" data-nav="guard">
+        <h1>Set your monthly cap</h1>
+        <p class="lede">Pick the most you're willing to pay. Budget Guard plans the month around that number.</p>
+
+        <div class="grid g-cap">
+          <div class="card">
+            <div class="card-b">
+              <div class="slider-wrap">
+                <div class="cap-val num" id="cap-val">$50</div>
+                <input type="range" id="cap" min="5" max="150" step="5" value="50" aria-label="Monthly cap in dollars">
+              </div>
+              <div class="banner good" style="margin:6px 0 16px">
+                <svg class="ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 2l5 2v4c0 3-2 5-5 6-3-1-5-3-5-6V4z"/><path d="M6 8l1.5 1.5L10.5 6.5"/></svg>
+                <div><div class="t">You'll never be charged more than <span id="cap-val2">$50</span> in a month.</div><div class="small">This is a hard limit. It holds during a spike, and it holds if our forecast is wrong.</div></div>
+              </div>
+              <div class="legend"><span><i style="background:var(--s1)"></i>Most likely spend</span><span><i style="background:#CFE0F5"></i>Likely range (8 in 10 months)</span><span><i style="background:none;border-top:2px dashed var(--ink);height:0;width:14px;border-radius:0"></i>Your cap</span></div>
+              <div class="chart" id="cap-chart"><div class="tt"></div></div>
+              <div style="display:flex;gap:28px;margin-top:12px;flex-wrap:wrap">
+                <div><div class="tiny">Chance a normal month reaches your cap</div><div class="prob"><span class="p num" id="p-hit">3%</span><span class="small muted" id="p-hit-w">about 1 month in 30</span></div></div>
+                <div><div class="tiny">Sampling would start at 80% of your cap</div><div class="prob"><span class="p num" id="soft">$40</span></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid" style="align-content:start">
+            <div class="card">
+              <div class="card-h">What happens as you get close</div>
+              <div class="card-b">
+                <div class="ladder">
+                  <div class="rung"><div class="at" id="r1">$0–40</div><div class="what"><b>Everything is recorded</b><span class="muted">Same as today.</span></div></div>
+                  <div class="rung"><div class="at" id="r2">$40–50</div><div class="what"><b>Priority data kept, the rest sampled</b><span class="muted">We email you the sampling rate and what it means for your data.</span></div></div>
+                  <div class="rung"><div class="at" id="r3">$50</div><div class="what"><b>Recording stops for the month</b><span class="muted">You can raise the cap with one click. You're never billed past it.</span></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">Always keep <span class="r">used when we sample</span></div>
+              <div class="card-b" style="padding-top:6px;padding-bottom:6px">
+                <label class="toggle"><input type="checkbox" checked><div>Sessions with an error<div class="d">exceptions, failed requests</div></div></label>
+                <label class="toggle"><input type="checkbox" checked><div>Rage clicks and dead clicks</div></label>
+                <label class="toggle"><input type="checkbox" checked><div>Logged-in users<div class="d">your actual customers</div></div></label>
+                <label class="toggle"><input type="checkbox" checked><div>Key pages<div class="d mono">/checkout, /signup</div></div></label>
+                <label class="toggle"><input type="checkbox" checked><div>Filter likely bots<div class="d">keep 1 in 100 so you can check our call</div></div></label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-nav"><button class="btn" data-go="1">← Back</button><button class="btn accent" id="turn-on">Turn on Budget Guard →</button></div>
+      </section>
+
+      <!-- 4. SPIKE -->
+      <section class="screen" id="s-spike" data-crumb="Organization / Billing / Budget Guard / <b>Replay March</b>" data-nav="guard">
+        <h1>What if March happens again, with a bot attack?</h1>
+        <p class="lede">We replay Leo's real March traffic and add a weekend bot attack (Mar 20–22), the kind that once got him a $4,100 bill (E3.2). Compare three setups.</p>
+
+        <div class="controls">
+          <button class="btn primary" id="play">▶ Play the month</button>
+          <label class="switch"><input type="checkbox" id="bots" checked> Bot attack, Mar 20–22 (+40,000 sessions a day)</label>
+          <span class="tiny" style="margin-left:auto">Cap: <b id="sp-cap">$50</b> · <button class="btn sm" data-go="2">change</button></span>
+        </div>
+
+        <div class="outcomes" id="outcomes"></div>
+
+        <div class="grid g-forecast">
+          <div class="card">
+            <div class="card-h"><span id="ch-title">Real users' sessions per day</span><span class="r" id="ch-day">Mar 1–31</span></div>
+            <div class="card-b">
+              <div class="legend"><span><i style="background:var(--s1)"></i>Recorded: priority sessions</span><span><i style="background:var(--s2)"></i>Recorded: other sessions</span><span><i style="background:repeating-linear-gradient(45deg,#D9D6CD 0 2px,#F1EFEA 2px 4px)"></i>Not recorded</span></div>
+              <div class="chart" id="day-chart"><div class="tt"></div></div>
+              <div class="tiny" style="margin-top:6px" id="day-note"></div>
+              <div style="margin-top:14px"><div class="small" style="font-weight:600;margin-bottom:4px">Spend so far this month</div>
+              <div class="chart" id="spend-chart"><div class="tt"></div></div></div>
+            </div>
+          </div>
+          <div class="grid" style="align-content:start">
+            <div class="card">
+              <div class="card-h">Budget Guard activity</div>
+              <div class="card-b"><div class="log" id="log"><div class="tiny">Press Play to run the month.</div></div></div>
+            </div>
+            <div class="card">
+              <div class="card-h">What wasn't recorded <span class="r">we tell you every time</span></div>
+              <div class="card-b" id="lost"></div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-nav"><button class="btn" data-go="2">← Back</button><button class="btn accent" data-go="4">Does it make PostHog money? →</button></div>
+      </section>
+
+      <!-- 5. IMPACT -->
+      <section class="screen" id="s-impact" data-crumb="Internal / <b>Budget Guard pilot: growth review</b>" data-nav="internal">
+        <h1>Budget Guard pilot: growth review <span class="tag hy">Illustrative internal view</span></h1>
+        <p class="lede">A feature can be popular and still not make money. This view tracks the one number that shows whether Budget Guard turns stuck free teams into paying teams, and keeps what we know separate from what we're guessing.</p>
+        <div class="legend" style="margin-bottom:14px"><span class="tag ev">Evidence</span> from the case data (simulated) &nbsp; <span class="tag as">Assumption</span> our estimate, to be tested &nbsp; <span class="tag hy">Hypothesis</span> what the pilot has to prove</div>
+
+        <div class="grid g3" style="margin-bottom:16px">
+          <div class="card">
+            <div class="card-h">The stuck teams <span class="tag ev" style="margin-left:auto">Evidence</span></div>
+            <div class="card-b funnel">
+              <div class="tiny" style="margin-bottom:6px">One quarter of new teams (Table D1)</div>
+              <div class="fr"><div class="fb" style="width:100%"><span>Reached a free limit</span></div><div class="fv">2,480</div></div>
+              <div class="fr"><div class="fb" style="width:40%"><span>Added a card</span></div><div class="fv">992 · 40%</div></div>
+              <div class="fr"><div class="fb light" style="width:60%"><span>Stopped at the limit</span></div><div class="fv">1,488</div></div>
+              <div class="fr"><div class="fb light" style="width:24.6%"><span>Afraid of the bill</span></div><div class="fv">41% (D2)</div></div>
+              <div class="tiny" style="margin-top:8px">Plus 6,000 earlier teams sitting at a limit today (D1 note).</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-h">The one number <span class="tag hy" style="margin-left:auto">Hypothesis</span></div>
+            <div class="card-b">
+              <div class="tiny">Share of teams at a free limit that add a card</div>
+              <div style="display:flex;align-items:center;margin:10px 0"><span class="big num">40%</span><span class="arrow">→</span><span class="big num" style="color:var(--accent)">57%</span></div>
+              <div class="small"><span class="tag ev">Evidence</span> 40% today (D1, row 5)</div>
+              <div class="small" style="margin-top:6px"><span class="tag hy">Target</span> 57% means 5,000 more paying teams over 2 years, Finance's "hit" case</div>
+              <div class="small" style="margin-top:6px"><span class="tag hy">Miss</span> 44% means 1,250 more teams, Finance's "miss" case ($1.5M)</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-h">What it's worth <span class="tag as" style="margin-left:auto">Assumption</span></div>
+            <div class="card-b">
+              <div style="display:flex;gap:18px;align-items:flex-end">
+                <div><div class="tiny">Finance's estimate</div><div style="font-size:24px;font-weight:600" class="num">$3.02M</div></div>
+                <div><div class="tiny">Our estimate</div><div style="font-size:24px;font-weight:600;color:var(--accent)" class="num">$2.34M</div></div>
+              </div>
+              <div class="small muted" style="margin-top:8px">We take off <b>$0.75M</b> of ARR. Our assumption is that 20% of small paying teams set a cap and spend 25% less (D3: 10,500 teams × $1,430 average).</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid g2">
+          <div class="card">
+            <div class="card-h">Show the math</div>
+            <div class="card-b">
+              <div class="eq">
+                Teams that won't pay without it: 6,000 + 8 quarters × 1,488 = <b>17,904</b><br>
+                Finance's hit case: 5,000 teams × $1,200 = $6.0M → 5,000 ÷ 17,904 = <b>28%</b> of them<br>
+                Card rate at the limit: 40% + 60% × 28% = <b>57%</b><br>
+                Our hit case after the cap discount: $6.0M − $0.75M = $5.25M · our miss case: $1.5M − $0.75M = $0.75M<br>
+                EV = 0.9 × (0.7 × $5.25M + 0.3 × $0.75M − $0.3M) − $0.9M = <b>$2.34M</b>
+              </div>
+              <div class="tiny" style="margin-top:8px">The probabilities, costs, and $1,200 first-year spend come from Table C1 and the Table D1 note.</div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-h">The cheapest test <span class="tag hy" style="margin-left:auto">Pilot design</span></div>
+            <div class="card-b">
+              <ul class="ev-list small">
+                <li><b>Who:</b> the next quarter's ~2,480 teams that reach a free limit, split 50/50.</li>
+                <li><b>What the test group gets:</b> the forecast and the cap on the limit banner. Sampling isn't needed yet, so this is the cheap part to build.</li>
+                <li><b>Success:</b> card-add rate moves from 40% toward 57%. With about 1,240 teams in each group, we can detect a lift of about 4 points. <span class="tag as">Our calc</span></li>
+                <li><b>Guardrail:</b> small paying teams that set a cap don't spend more than 25% less.</li>
+                <li><b>Kill rule:</b> below 44%, which is the miss case, we stop before building sampling.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div class="footer-nav"><button class="btn" data-go="3">← Back</button><button class="btn" data-go="0">Start over</button></div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- modals -->
+<div class="scrim" id="m-limit" role="dialog" aria-modal="true" aria-labelledby="m-limit-t">
+  <div class="modal">
+    <div class="mh"><span id="m-limit-t">Billing limit</span><button data-close aria-label="Close">×</button></div>
+    <div class="mb">
+      <div class="small muted" style="margin-bottom:8px">Session replay: maximum monthly spend</div>
+      <div class="field"><span>$</span><input type="text" placeholder="Enter an amount" aria-label="Billing limit"></div>
+      <div class="tiny" style="margin-top:6px">Usage past the limit isn't saved.</div>
+      <div class="thought">"I saw it. I didn't know what number to put in."<cite>Leo, case interview E3.3</cite></div>
+    </div>
+    <div class="mf"><button class="btn" data-close>Cancel</button><button class="btn accent" data-go="1" data-close>Show me the forecast instead</button></div>
+  </div>
+</div>
+<div class="scrim" id="m-card" role="dialog" aria-modal="true" aria-labelledby="m-card-t">
+  <div class="modal">
+    <div class="mh"><span id="m-card-t">Upgrade to pay as you go</span><button data-close aria-label="Close">×</button></div>
+    <div class="mb">
+      <p style="margin-top:0">Add a card to keep recording. You pay for what you use past the free limits.</p>
+      <div class="banner warn"><svg class="ic" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M10 3l8 14H2z"/><path d="M10 8v4M10 14.5v.5"/></svg><div class="small">This screen doesn't say how much you'll pay next month.</div></div>
+      <div class="thought">"At my last startup a logging tool billed us $4,100 after a bot hammered the site one weekend. I'm not doing that again."<cite>Leo, case interview E3.2</cite></div>
+      <div class="tiny" style="margin-top:10px">Demo only. This prototype doesn't collect payment details.</div>
+    </div>
+    <div class="mf"><button class="btn" data-close>Not now</button><button class="btn accent" data-go="1" data-close>See the forecast first</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status">
+  <div style="display:flex;gap:10px;align-items:flex-start">
+    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="var(--good)" stroke-width="1.6"><path d="M8 2l5 2v4c0 3-2 5-5 6-3-1-5-3-5-6V4z"/><path d="M6 8l1.5 1.5L10.5 6.5"/></svg>
+    <div><b>Budget Guard is on</b><div class="small muted" id="toast-t">Cap $50 a month. Recording has restarted.</div><div class="tiny">Demo: no payment was collected.</div></div>
+  </div>
+</div>
+
+<div class="notes" id="notes"></div>
+
+<script>
+(() => {
+// ---------- model ----------
+const P_REC = 0.005, P_EVT = 0.00005, FREE_REC = 5000, FREE_EVT = 1e6;
+const cost = (r, e) => Math.max(0, r - FREE_REC) * P_REC + Math.max(0, e - FREE_EVT) * P_EVT;
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+const money = (v, d) => '$' + (d===undefined ? (v >= 100 ? Math.round(v).toLocaleString() : v.toFixed(v < 10 && v % 1 ? 2 : 0)) : v.toFixed(d));
+const fmt = n => Math.round(n).toLocaleString();
+const pct = v => (v < 0.01 && v > 0 ? '<1' : Math.round(v * 100)) + '%';
+
+// erf-based normal CDF
+const Phi = z => { const t = 1/(1+0.3275911*Math.abs(z)); const y = 1-(((((1.061405429*t-1.453152027)*t)+1.421413741)*t-0.284496736)*t+0.254829592)*t*Math.exp(-z*z/2); return z>=0? (1+y)/2 : (1-y)/2; };
+
+// April forecast: usage multiplier m ~ lognormal(0, SIG)
+const AP = { rec: 8300, evt: 1.17e6, days: 30, startDow: 3 }; // Apr 1 2026 = Wed
+const SIG = 0.1225, Z90 = 1.2816;
+const mQ = z => Math.exp(SIG * z);
+const monthCost = m => cost(AP.rec * m, AP.evt * m);
+const fc = { lo: monthCost(mQ(-Z90)), med: monthCost(1), hi: monthCost(mQ(Z90)) };
+// daily shape
+const wk = (d, s) => { const w = (s + d - 1) % 7; return w === 0 || w === 6; };
+const apShape = (() => { const raw = []; for (let d = 1; d <= AP.days; d++) raw.push(wk(d, AP.startDow) ? 0.655 : 1); const t = raw.reduce((a,b)=>a+b,0); return raw.map(x => x / t); })();
+const cumCostApr = m => { let r=0,e=0; return apShape.map(s => { r += AP.rec*m*s; e += AP.evt*m*s; return cost(r,e); }); };
+function pHit(cap) {
+  // find m* where monthCost(m)=cap
+  let lo = 0.2, hi = 20; if (monthCost(hi) < cap) return 0;
+  for (let i=0;i<60;i++){ const mid=(lo+hi)/2; if (monthCost(mid) < cap) lo=mid; else hi=mid; }
+  return 1 - Phi(Math.log(lo) / SIG);
+}
+
+// March replay
+const MAR = { days: 31, startDow: 0 }; // Mar 1 2026 = Sun
+const PRI_SHARE = 0.18, EPS_REAL = 138, EPS_BOT = 150, BOT_PER_DAY = 40000, BOT_DAYS = [20,21,22];
+const DETECT = 0.97, FP = 0.015, AUDIT = 0.01, BUG_DAY = 24;
+const real = d => wk(d, MAR.startDow) ? 190 : 290;
+
+function simulate(mode, cap, bots) {
+  const days = []; let cr = 0, ce = 0;
+  const log = []; let sampling = false, alerted50 = false, alerted80 = false, pausedDay = null, evtPausedDay = null, spikeSeen = false, stopped = false;
+  const tot = { real:0, realRec:0, pri:0, priRec:0, fp:0, botIn:0, botRec:0, minK:1, sampDays:[] };
+  for (let d = 1; d <= MAR.days; d++) {
+    const R = real(d), P = R * PRI_SHARE, A = R - P, B = bots && BOT_DAYS.includes(d) ? BOT_PER_DAY : 0;
+    let recP = 0, recA = 0, recB = 0, evt = 0, k = 1, fpN = 0;
+    if (mode === 'free') {
+      const inc = R + B, room = Math.max(0, FREE_REC - cr);
+      const frac = room >= inc ? 1 : room / inc;
+      recP = P*frac; recA = A*frac; recB = B*frac;
+      if (frac < 1 && pausedDay === null) pausedDay = d;
+      const eInc = R*EPS_REAL + B*EPS_BOT, eRoom = Math.max(0, FREE_EVT - ce);
+      evt = Math.min(eInc, eRoom) * frac; // events stop at limit too
+      if (eInc > eRoom && evtPausedDay === null) evtPausedDay = d;
+      cr += recP+recA+recB; ce += (Math.min(eInc,eRoom));
+      k = frac;
+    } else if (mode === 'nocap') {
+      recP = P; recA = A; recB = B; cr += R + B; ce += R*EPS_REAL + B*EPS_BOT; evt = 0;
+    } else {
+      const spike = B > 0;
+      if (spike && !spikeSeen) { spikeSeen = true; log.push({d, t:'06:12', h:'Traffic spike: about 140× your normal', b:`Most of it comes from 3 IP ranges with headless-browser signatures, so we're treating it as likely bot traffic. We keep 1 in 100 of those sessions so you can check our call. Emailed you.`}); }
+      fpN = spike ? A * FP : 0;
+      const flagged = spike ? B * DETECT + fpN : 0;
+      const missed = spike ? B * (1 - DETECT) : 0;
+      const anonReal = A - fpN;
+      // rest-of-month normal projection
+      let restP = 0, restA = 0; for (let j = d+1; j <= MAR.days; j++) { restP += real(j)*PRI_SHARE; restA += real(j)*(1-PRI_SHARE); }
+      const proj = (kk, pf=1) => {
+        const r = cr + P*pf + kk*(anonReal + missed) + flagged*AUDIT + restP + kk*restA;
+        const e = ce + (P*pf + kk*anonReal)*EPS_REAL + (kk*missed + flagged*AUDIT)*EPS_BOT + (restP + kk*restA)*EPS_REAL;
+        return cost(r, e);
+      };
+      const soft = cap * 0.8;
+      if (stopped) { k = 0; }
+      else if (proj(1) <= soft) k = 1;
+      else if (proj(0) > soft) k = 0;
+      else { let lo=0, hi=1; for (let i=0;i<40;i++){ const m=(lo+hi)/2; if (proj(m) <= soft) lo=m; else hi=m; } k = lo; }
+      if (k < 0.02) k = 0;
+      let pf = stopped ? 0 : 1;
+      // hard cap: today's actual must not push past cap
+      const todayCost = (kk, ppf) => cost(cr + P*ppf + kk*(anonReal+missed) + flagged*AUDIT*(ppf>0?1:0), ce + (P*ppf + kk*anonReal)*EPS_REAL + (kk*missed + flagged*AUDIT*(ppf>0?1:0))*EPS_BOT);
+      if (!stopped && todayCost(k, 1) > cap) { k = 0; let lo=0, hi=1; for (let i=0;i<40;i++){ const m=(lo+hi)/2; if (todayCost(0,m) <= cap) lo=m; else hi=m; } pf = lo; stopped = true;
+        log.push({d, t:'—', h:`Cap reached: ${money(cap,0)}`, b:'Recording has stopped until Apr 1. You won\'t be charged more. Raise the cap any time to restart.'}); }
+      const audit = pf > 0 ? flagged*AUDIT : 0;
+      recP = P*pf; recA = k*anonReal + (pf>0? fpN*AUDIT : 0); recB = k*missed + (pf>0 ? B*DETECT*AUDIT : 0);
+      cr += recP + k*(anonReal+missed) + audit;
+      ce += (recP + k*anonReal)*EPS_REAL + (k*missed + audit)*EPS_BOT;
+      tot.fp += fpN;
+      if (k < 1 && !stopped) { tot.sampDays.push(d); tot.minK = Math.min(tot.minK, k); }
+      if (k < 0.999 && !sampling && !stopped) { sampling = true; log.push({d, t:'06:20', h:`Sampling on: keeping ${pct(k)} of other sessions`, b:`At this rate you'd pass ${money(soft,0)}, which is 80% of your cap. All error, logged-in, and /checkout sessions are still recorded. Charts for these days are marked "estimated".`}); }
+      else if (sampling && k >= 0.999) { sampling = false; log.push({d, t:'00:00', h:'Sampling off', b:'Traffic is back to normal and the month fits under your cap again.'}); }
+      else if (sampling && !stopped && Math.abs(k - (days[days.length-1]?.k ?? 1)) > 0.08) { log.push({d, t:'00:00', h:`Sampling adjusted to ${pct(k)}`, b: B ? 'The spike continues.' : 'The spike has ended. The rate stays lower because it used part of your budget.'}); }
+      const c = cost(cr, ce);
+      if (!alerted50 && c >= cap*0.5) { alerted50 = true; log.push({d, t:'—', h:`You've used half your cap (${money(c)})`, b:'Email sent. No action needed.'}); }
+      if (!alerted80 && c >= cap*0.8 - 0.005) { alerted80 = true; log.push({d, t:'—', h:`80% of cap reached (${money(c)})`, b:'Priority sessions are protected by the remaining 20%.'}); }
+    }
+    const spend = mode === 'free' ? 0 : cost(cr, ce);
+    tot.real += R; tot.realRec += recP + Math.min(recA, A); tot.pri += P; tot.priRec += recP; tot.botIn += B;
+    days.push({ d, R, P, A, B, recP, recA: Math.min(recA, A), spend, k });
+  }
+  const bugDay = days[BUG_DAY-1];
+  if (mode === 'guard') {
+    if (bugDay.recP > 0.5 * bugDay.P) log.push({d:BUG_DAY, t:'14:08', h:'Jordan\'s checkout session was recorded', b:'Logged-in user, a JS error on /checkout: priority, so it was kept. You can watch the Safari bug happen.'});
+    log.sort((a,b)=>a.d-b.d);
+    log.push({d:31, t:'23:59', h:`March closes at ${money(cost(cr,ce),2)}`, b:`Under your ${money(cap,0)} cap.` + (tot.sampDays.length ? ` Sampling ran on ${tot.sampDays.length} day${tot.sampDays.length>1?'s':''}.` : ' No sampling was needed.')});
+  }
+  return { days, bill: mode==='free' ? 0 : cost(cr, ce), log, tot, pausedDay, evtPausedDay, bugKept: bugDay.recP > 0.5 * bugDay.P };
+}
+
+// ---------- state & navigation ----------
+const screens = ['problem','forecast','cap','spike','impact'];
+const labels = ['The problem','Forecast','Set a cap','Replay a spike','Business impact'];
+let cur = 0, cap = 50, scen = 'guard';
+const notesTxt = [
+  '<b>Screen 1 (the moment):</b> Leo is a solo founder on the free plan. Session replay ran out on the 19th and he switched it off instead of adding a card (E3.1). Five days later a customer reports a checkout bug, and there\'s no recording. It took him two days to reproduce (E3.4). Table D1 shows he isn\'t alone: 60% of teams at a free limit stop there.',
+  '<b>Screen 2 (the forecast):</b> This answers the question Leo couldn\'t answer (E3.3). It gives a range, not a promise, and it says what it can\'t predict. Note how wide the range is: small traffic changes swing the bill when you\'re just past the free tier.',
+  '<b>Screen 3 (the cap):</b> Leo said "$50 a month, flat, I\'d pay today" (E3.5). The cap is a hard ceiling, which is the guarantee he wanted. Move the slider: the chance of reaching the cap updates. Priority rules decide what\'s kept if we sample.',
+  '<b>Screen 4 (the spike):</b> Press Play. Without a card, replay is off for 12 days and the bug is lost. With a card and no cap, the bot weekend costs about $1,500. With Budget Guard, the bill stays under $50, error and checkout sessions are kept, and we report exactly what was sampled.',
+  '<b>Screen 5 (the proof):</b> A popular feature doesn\'t automatically make money. The one number is the card-add rate at the limit, 40% today (D1). The hit case needs 57%. The pilot tests the forecast and the cap first, before we build sampling.'
+];
+function go(i) {
+  i = Math.max(0, Math.min(screens.length-1, i)); cur = i;
+  $$('.screen').forEach((s, j) => s.classList.toggle('on', j === i));
+  const sc = $$('.screen')[i];
+  $('#crumbs').innerHTML = sc.dataset.crumb;
+  $$('.nav[data-nav]').forEach(n => n.classList.toggle('on', n.dataset.nav === sc.dataset.nav));
+  const internal = i === 4; $('#internal-h').style.display = $('#internal-nav').style.display = internal ? '' : 'none';
+  $('.proj .sub').textContent = internal ? 'Internal growth view' : (guardOn ? 'Production · Budget Guard $' + cap : 'Production · Free plan');
+  $('#steps').innerHTML = labels.map((l, j) => `<button class="step ${j===i?'on':''} ${j<i?'done':''}" data-go="${j}" aria-current="${j===i?'step':'false'}"><span class="n">${j<i?'✓':j+1}</span><span class="lb">${l}</span></button>`).join('');
+  $('#notes').innerHTML = notesTxt[i];
+  try { history.replaceState(null, '', '#' + screens[i]); } catch(e) { location.hash = screens[i]; }
+  window.scrollTo(0, 0);
+  if (i === 2) drawCap();
+  if (i === 3) renderSpike(true);
+}
+let guardOn = false;
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (g) { if (g.hasAttribute('data-close')) closeAll(); go(+g.dataset.go); return; }
+  if (e.target.closest('[data-close]') || e.target.classList.contains('scrim')) closeAll();
+});
+const closeAll = () => $$('.scrim').forEach(s => s.classList.remove('on'));
+$('#open-limit').onclick = () => $('#m-limit').classList.add('on');
+$('#open-card').onclick = () => $('#m-card').classList.add('on');
+$('#find-session').onclick = () => { $('#find-result').style.display = 'block'; };
+$('#turn-on').onclick = () => { guardOn = true; $('#toast-t').textContent = `Cap ${money(cap,0)} a month. Recording has restarted.`; const t=$('#toast'); t.classList.add('on'); setTimeout(()=>t.classList.remove('on'), 3200); go(3); };
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input,select,textarea')) return;
+  if (e.key === 'ArrowRight') go(cur+1);
+  else if (e.key === 'ArrowLeft') go(cur-1);
+  else if (e.key.toLowerCase() === 'n') $('#notes').classList.toggle('on');
+  else if (e.key === 'Escape') closeAll();
+});
+
+// ---------- forecast screen ----------
+(function forecast(){
+  $('#fc-med').textContent = money(Math.round(fc.med),0);
+  $('#fc-lo').textContent = money(Math.round(fc.lo),0);
+  $('#fc-hi').textContent = money(Math.round(fc.hi),0);
+  const X = v => (v / 75 * 100) + '%';
+  Object.assign($('#rb-band').style, { left: X(fc.lo), width: `calc(${X(fc.hi)} - ${X(fc.lo)})` });
+  $('#rb-med').style.left = X(fc.med);
+  const mL = mQ(-Z90), mH = mQ(Z90);
+  const rc = m => Math.max(0, AP.rec*m - FREE_REC)*P_REC, ec = m => Math.max(0, AP.evt*m - FREE_EVT)*P_EVT;
+  const rows = [
+    ['Session replay', '5,000 recordings', `${fmt(AP.rec)} <span class="tiny">(${fmt(AP.rec*mL)}–${fmt(AP.rec*mH)})</span>`, rc(1), rc(mL), rc(mH)],
+    ['Product analytics', '1M events', `${(AP.evt/1e6).toFixed(2)}M <span class="tiny">(${(AP.evt*mL/1e6).toFixed(2)}–${(AP.evt*mH/1e6).toFixed(2)}M)</span>`, ec(1), ec(mL), ec(mH)],
+    ['Feature flags', '1M requests', '180K <span class="tiny">(150–210K)</span>', 0, 0, 0],
+    ['Error tracking', '100K exceptions', '2.1K <span class="tiny">(1.6–2.9K)</span>', 0, 0, 0],
+  ];
+  $('#fc-table').innerHTML = rows.map(r => `<tr><td>${r[0]}</td><td class="r small muted">${r[1]}</td><td class="r small num">${r[2]}</td><td class="r num"><b>${money(r[3],2)}</b> <span class="tiny">(${money(r[4],0)}–${money(r[5],0)})</span></td></tr>`).join('');
+  const calc = () => { const n = Math.max(0, +$('#calc-n').value || 0), kind = $('#calc-kind').value;
+    $('#calc-ans').textContent = money(n * (kind==='rec'?P_REC:P_EVT), 2);
+    $('#calc-note').textContent = kind==='rec' ? 'Once you\'re past the free 5,000 recordings, each extra one costs $0.005.' : 'Once you\'re past the free 1M events, each extra one costs $0.00005 ($50 per million).'; };
+  $('#calc-n').oninput = calc; $('#calc-kind').onchange = calc; calc();
+})();
+
+// ---------- svg helpers ----------
+const NS = 'http://www.w3.org/2000/svg';
+const el = (tag, attrs={}, parent) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (parent) parent.appendChild(n); return n; };
+function niceMax(v){ const steps=[10,20,25,50,75,100,150,200,250,300,400,500]; return steps.find(s=>s>=v) || Math.ceil(v/100)*100; }
+function showTT(box, html, x, y){ const tt = box.querySelector('.tt'); tt.innerHTML = html; tt.style.display='block'; tt.style.left = x+'px'; tt.style.top = y+'px'; }
+function hideTT(box){ box.querySelector('.tt').style.display='none'; }
+
+// ---------- cap screen ----------
+function drawCap(){
+  const box = $('#cap-chart'); box.querySelectorAll('svg').forEach(s=>s.remove());
+  const W = 680, H = 230, m = {l:40, r:56, t:14, b:24};
+  const svg = el('svg', {viewBox:`0 0 ${W} ${H}`, role:'img', 'aria-label':`April cumulative spend forecast: most likely ${money(fc.med,0)}, range ${money(fc.lo,0)} to ${money(fc.hi,0)}, cap ${money(cap,0)}`});
+  const lo = cumCostApr(mQ(-Z90)), md = cumCostApr(1), hi = cumCostApr(mQ(Z90));
+  const yMax = niceMax(Math.max(cap*1.1, fc.hi*1.1));
+  const x = d => m.l + (d-1)/(AP.days-1)*(W-m.l-m.r), y = v => H-m.b - v/yMax*(H-m.t-m.b);
+  const stp = yMax <= 100 ? 25 : 50; for (let v=0; v<=yMax; v+=stp){ el('line',{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:'#ECEAE4'},svg); el('text',{x:m.l-6,y:y(v)+4,'text-anchor':'end'},svg).textContent='$'+v; }
+  [1,8,15,22,30].forEach(d=>{ el('text',{x:x(d),y:H-6,'text-anchor':'middle'},svg).textContent='Apr '+d; });
+  let p = ''; lo.forEach((v,i)=>p+=(i?'L':'M')+x(i+1)+','+y(v)); for (let i=hi.length-1;i>=0;i--) p+='L'+x(i+1)+','+y(hi[i]); p+='Z';
+  el('path',{d:p,fill:'#CFE0F5'},svg);
+  el('path',{d:md.map((v,i)=>(i?'L':'M')+x(i+1)+','+y(v)).join(''),fill:'none',stroke:'var(--s1)','stroke-width':2},svg);
+  // free tier annotation
+  const freeEnd = md.findIndex(v=>v>0.01)+1;
+  el('text',{x:x(Math.max(2,freeEnd-6)),y:y(0)-8,'text-anchor':'middle'},svg).textContent='Free tier covers these days';
+  el('line',{x1:m.l,x2:W-m.r,y1:y(cap),y2:y(cap),stroke:'var(--ink)','stroke-width':1.5,'stroke-dasharray':'5 4'},svg);
+  const cl = el('text',{x:W-m.r+6,y:y(cap)+4,class:'lbl'},svg); cl.textContent = 'Cap '+money(cap,0);
+  const ml = el('text',{x:W-m.r+6,y:y(md[md.length-1])+4},svg); ml.textContent = money(md[md.length-1],0);
+  if (Math.abs(y(cap)-y(md[md.length-1])) < 14) ml.setAttribute('y', y(md[md.length-1]) + (y(md[md.length-1])>y(cap)?16:-8));
+  // hover
+  const cross = el('line',{y1:m.t,y2:H-m.b,stroke:'var(--ink-3)','stroke-width':1,opacity:0},svg);
+  const dot = el('circle',{r:4,fill:'var(--s1)',stroke:'#fff','stroke-width':2,opacity:0},svg);
+  const hit = el('rect',{x:m.l,y:m.t,width:W-m.l-m.r,height:H-m.t-m.b,fill:'transparent'},svg);
+  hit.addEventListener('mousemove', ev => { const r = svg.getBoundingClientRect(); const sx = (ev.clientX-r.left)/r.width*W; const d = Math.max(1,Math.min(AP.days,Math.round((sx-m.l)/(W-m.l-m.r)*(AP.days-1)+1)));
+    cross.setAttribute('x1',x(d)); cross.setAttribute('x2',x(d)); cross.setAttribute('opacity',1); dot.setAttribute('cx',x(d)); dot.setAttribute('cy',y(md[d-1])); dot.setAttribute('opacity',1);
+    showTT(box, `<b>Apr ${d}</b> · spent so far<br>Most likely ${money(md[d-1],2)}<br>Range ${money(lo[d-1],2)}–${money(hi[d-1],2)}`, x(d)/W*r.width, y(hi[d-1])/H*r.height); });
+  hit.addEventListener('mouseleave', ()=>{ cross.setAttribute('opacity',0); dot.setAttribute('opacity',0); hideTT(box); });
+  box.prepend(svg);
+  const p0 = pHit(cap);
+  $('#p-hit').textContent = p0 < 0.01 ? '<1%' : p0 > 0.99 ? '>99%' : Math.round(p0*100)+'%';
+  $('#p-hit-w').textContent = p0 < 0.01 ? 'very unlikely without a spike' : p0 > 0.95 ? 'almost every month, so expect sampling' : `about 1 month in ${Math.max(1,Math.round(1/p0))}`;
+}
+function setCap(v){
+  cap = v; $('#cap').value = v;
+  ['#cap-val','#cap-val2','#sp-cap'].forEach(s => $(s).textContent = money(v,0));
+  $('#soft').textContent = money(v*0.8, v*0.8 % 1 ? 2 : 0);
+  $('#r1').textContent = `$0–${Math.round(v*0.8)}`; $('#r2').textContent = `$${Math.round(v*0.8)}–${v}`; $('#r3').textContent = `$${v}`;
+  if (cur === 2) drawCap();
+}
+$('#cap').addEventListener('input', e => setCap(+e.target.value));
+
+// ---------- spike screen ----------
+let sims = {}, playing = null, shownDay = 31;
+function runSims(){ const b = $('#bots').checked; sims = { free: simulate('free', cap, b), nocap: simulate('nocap', cap, b), guard: simulate('guard', cap, b) }; }
+function renderSpike(reset){
+  runSims(); if (reset) { stopPlay(); shownDay = 31; }
+  const T = s => s.tot;
+  const card = (key, title, s) => {
+    const t = T(s), realPct = t.realRec / t.real, priPct = t.priRec / t.pri;
+    const billCls = key==='nocap' && s.bill > cap ? 'no' : '';
+    return `<div class="oc ${scen===key?'on':''}" data-scen="${key}" tabindex="0" role="button" aria-pressed="${scen===key}">
+      <div class="h">${title}</div>
+      <div class="bill num ${billCls}">${money(s.bill, s.bill<100?2:undefined)}</div>
+      <div class="row"><span>Real sessions recorded</span><span class="num">${pct(realPct)}</span></div>
+      <div class="row"><span>Error and checkout sessions</span><span class="num">${pct(priPct)}</span></div>
+      <div class="row"><span>Jordan's checkout bug (Mar 24)</span><span class="${s.bugKept?'ok':'no'}">${s.bugKept?'✓ Recorded':'✗ Lost'}</span></div>
+    </div>`;
+  };
+  $('#outcomes').innerHTML = card('free','Free plan, no card', sims.free) + card('nocap','Card, no cap', sims.nocap) + card('guard',`Budget Guard, ${money(cap,0)} cap`, sims.guard);
+  $$('#outcomes .oc').forEach(o => { const f = () => { scen = o.dataset.scen; renderSpike(false); }; o.onclick = f; o.onkeydown = e => { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); f(); } }; });
+  drawDays(); drawSpend(); renderLog(); renderLost();
+}
+function drawDays(){
+  const s = sims[scen], box = $('#day-chart'); box.querySelectorAll('svg').forEach(x=>x.remove());
+  const W = 680, H = 190, m = {l:36, r:8, t:22, b:22}, yMax = 350;
+  const svg = el('svg',{viewBox:`0 0 ${W} ${H}`, role:'img', 'aria-label':'Real user sessions per day in March, recorded versus not recorded'});
+  const bw = (W-m.l-m.r)/31, barW = Math.min(14, bw-3);
+  const y = v => H-m.b - v/yMax*(H-m.t-m.b);
+  const defs = el('defs',{},svg); const pat = el('pattern',{id:'hatch',width:4,height:4,patternUnits:'userSpaceOnUse',patternTransform:'rotate(45)'},defs); el('rect',{width:4,height:4,fill:'#F1EFEA'},pat); el('rect',{width:2,height:4,fill:'#D9D6CD'},pat);
+  [0,100,200,300].forEach(v=>{ el('line',{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:'#ECEAE4'},svg); el('text',{x:m.l-6,y:y(v)+4,'text-anchor':'end'},svg).textContent=v; });
+  s.days.forEach((dd,i)=>{
+    const cx = m.l + bw*i + bw/2, x0 = cx - barW/2;
+    if (dd.d % 5 === 1 || dd.d === 31) el('text',{x:cx,y:H-6,'text-anchor':'middle'},svg).textContent = 'Mar '+dd.d;
+    if (dd.d > shownDay) { el('rect',{x:x0,y:y(dd.R),width:barW,height:y(0)-y(dd.R),fill:'#F6F5F1',rx:2},svg); return; }
+    const segs = [[dd.recP,'var(--s1)'],[dd.recA,'var(--s2)'],[dd.R-dd.recP-dd.recA,'url(#hatch)']];
+    let base = 0;
+    segs.forEach(([v,c],j)=>{ if (v < 0.5) return; const top = base+v; const h = y(base)-y(top) - (base>0?2:0);
+      el('rect',{x:x0,y:y(top),width:barW,height:Math.max(0,h),fill:c,rx: j===2||segs.slice(j+1).every(q=>q[0]<0.5)?2:0},svg); base = top; });
+    if (dd.B > 0) { el('text',{x:cx,y:y(dd.R)-6,'text-anchor':'middle',style:'fill:var(--bad);font-weight:600;font-size:9px'},svg).textContent='bots'; }
+    if (dd.d === BUG_DAY) { el('text',{x:cx,y:m.t-8,'text-anchor':'middle',class:'lbl'},svg).textContent='Jordan\'s bug'; el('line',{x1:cx,x2:cx,y1:m.t-4,y2:y(dd.R)-2,stroke:'var(--ink)','stroke-width':1},svg); }
+    const hit = el('rect',{x:m.l+bw*i,y:m.t,width:bw,height:H-m.t-m.b,fill:'transparent'},svg);
+    hit.addEventListener('mousemove',()=>{ const r = svg.getBoundingClientRect();
+      showTT(box, `<b>Mar ${dd.d}</b>${dd.B?` · +${fmt(dd.B)} bot sessions`:''}<br>Recorded priority: ${fmt(dd.recP)} of ${fmt(dd.P)}<br>Recorded other: ${fmt(dd.recA)} of ${fmt(dd.A)}${scen==='guard'&&dd.k<1?`<br>Sampling rate: ${pct(dd.k)}`:''}`, cx/W*r.width, y(dd.R)/H*r.height); });
+    hit.addEventListener('mouseleave',()=>hideTT(box));
+  });
+  $('#day-note').innerHTML = (scen==='free' && s.pausedDay ? `<b style="color:var(--ink)">Free limit reached Mar ${s.pausedDay}.</b> Recording paused for the last ${31-s.pausedDay} days of the month. ` : '') + 'Bot sessions are left out of this chart. They would be about 150 times taller than the bars.';
+  box.prepend(svg);
+  $('#ch-day').textContent = shownDay < 31 ? `Mar 1–${shownDay}` : 'Mar 1–31';
+}
+function drawSpend(){
+  const s = sims[scen], box = $('#spend-chart'); box.querySelectorAll('svg').forEach(x=>x.remove());
+  const W = 680, H = 110, m = {l:36, r:70, t:10, b:18};
+  const yMax = niceMax(cap*1.25);
+  const svg = el('svg',{viewBox:`0 0 ${W} ${H}`, role:'img', 'aria-label':'Spend so far this month against the cap'});
+  const bw = (W-m.l-m.r)/31; const x = d => m.l + bw*(d-1) + bw/2; const y = v => H-m.b - Math.min(v,yMax)/yMax*(H-m.t-m.b);
+  (yMax<=100?[0,25,50,75,100]:[0,yMax/2,yMax]).filter(v=>v<=yMax).forEach(v=>{ el('line',{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:'#ECEAE4'},svg); el('text',{x:m.l-6,y:y(v)+4,'text-anchor':'end'},svg).textContent='$'+Math.round(v); });
+  el('line',{x1:m.l,x2:W-m.r,y1:y(cap),y2:y(cap),stroke:'var(--ink)','stroke-width':1.5,'stroke-dasharray':'5 4'},svg);
+  el('text',{x:W-m.r+6,y:y(cap)+4,class:'lbl'},svg).textContent='Cap '+money(cap,0);
+  const pts = s.days.filter(d=>d.d<=shownDay);
+  if (pts.length){
+    const col = scen==='nocap' ? 'var(--bad)' : 'var(--s1)';
+    el('path',{d:pts.map((p,i)=>(i?'L':'M')+x(p.d)+','+y(p.spend)).join(''),fill:'none',stroke:col,'stroke-width':2,'stroke-linejoin':'round'},svg);
+    const last = pts[pts.length-1];
+    el('circle',{cx:x(last.d),cy:y(last.spend),r:4,fill:col,stroke:'#fff','stroke-width':2},svg);
+    const over = last.spend > yMax;
+    let ty = over ? m.t+10 : y(last.spend)-6; if (!over && Math.abs(ty - (y(cap)+4)) < 12) ty = y(cap) + 18;
+    const tx = Math.min(x(last.d)+8, W-m.r-4);
+    const t = el('text',{x:tx,y:ty,class:'lbl','text-anchor': last.d>26?'end':'start'},svg); t.textContent = (over?'↑ ':'') + money(last.spend, last.spend<100?2:undefined) + (over?' (off the chart)':'');
+    if (scen==='free') { t.textContent = '$0, but no data after the limit'; t.setAttribute('y', y(0)-6); }
+  }
+  box.prepend(svg);
+}
+function renderLog(){
+  const s = sims[scen], L = $('#log');
+  if (scen === 'free') { L.innerHTML = `<div class="e"><div class="d">Mar ${s.pausedDay||'—'}</div><div><b>Session replay paused</b>Free limit reached. Nothing is recorded until Apr 1.</div></div>` + (s.evtPausedDay?`<div class="e"><div class="d">Mar ${s.evtPausedDay}</div><div><b>Product analytics paused too</b>Bot events used up the free 1M events. Your charts go blank.</div></div>`:'') + `<div class="e"><div class="d">Mar 24</div><div><b>Jordan's bug: no recording</b>Leo reproduces it by hand (E3.4).</div></div>`; return; }
+  if (scen === 'nocap') { L.innerHTML = `<div class="e"><div class="d">Mar 20</div><div><b>${$('#bots').checked?'Bot traffic recorded and billed in full':'Everything recorded'}</b>Without a cap, nothing slows usage down.</div></div><div class="e"><div class="d">Apr 1</div><div><b>Invoice: ${money(s.bill, s.bill<100?2:undefined)}</b>${$('#bots').checked?'The surprise bill Leo is afraid of (E3.2).':'A normal month.'}</div></div>`; return; }
+  const items = s.log.filter(e => e.d <= shownDay);
+  L.innerHTML = items.length ? items.map(e=>`<div class="e"><div class="d">Mar ${e.d}<br>${e.t}</div><div><b>${e.h}</b>${e.b}</div></div>`).join('') : '<div class="tiny">Nothing needed attention yet.</div>';
+  L.scrollTop = L.scrollHeight;
+}
+function renderLost(){
+  const s = sims[scen], t = s.tot, Lb = $('#lost');
+  const lostReal = t.real - t.realRec, lostPri = t.pri - t.priRec;
+  if (scen==='nocap') { Lb.innerHTML = `<div class="small muted">Nothing was lost, but you paid for every bot session too: <b>${fmt(t.botIn)}</b> of them.</div>`; return; }
+  if (scen==='free') { Lb.innerHTML = `<div class="lost"><div>Real sessions not recorded</div><div>${fmt(lostReal)}</div><div>Of those, error, logged-in, or checkout</div><div class="no">${fmt(lostPri)}</div><div>Days with no replay</div><div>${s.pausedDay?31-s.pausedDay:0}</div></div><div class="tiny" style="margin-top:8px">The free plan cuts everything off, including the sessions you'd most want to see.</div>`; return; }
+  const n = 230, kk = t.minK; const moe = kk < 1 && kk > 0 ? 1.96*Math.sqrt((1-kk)/(n*kk)) : 0;
+  const fpLo = Math.round(t.fp*0.6), fpHi = Math.round(t.fp*1.6);
+  Lb.innerHTML = `<div class="lost">
+    <div>Other real sessions sampled out</div><div>${fmt(lostReal - lostPri)}</div>
+    <div>Error, logged-in, or checkout sessions lost</div><div class="${lostPri<1?'ok':'no'}">${fmt(lostPri)}</div>
+    <div>Days with sampling</div><div>${t.sampDays.length}</div>
+    ${t.fp>0?`<div>Real visitors we may have mistaken for bots</div><div>~${fpLo}–${fpHi}</div>`:''}
+  </div>
+  <div class="tiny" style="margin-top:8px">${kk<1&&kk>0?`Charts for sampled days are scaled up from the sample and marked "estimated". Daily session counts are within about ±${Math.round(moe*100)}%.`:'No sampling happened, so all charts are exact.'} ${t.fp>0?'Bot detection is a heuristic, not a certainty. The 1-in-100 audit sample lets you check it.':''}</div>`;
+}
+function stopPlay(){ if (playing) { clearInterval(playing); playing = null; $('#play').textContent = '▶ Play the month'; } }
+$('#play').onclick = () => {
+  if (playing) { stopPlay(); return; }
+  shownDay = 0; $('#play').textContent = '❚❚ Pause';
+  playing = setInterval(()=>{ shownDay++; drawDays(); drawSpend(); renderLog(); if (shownDay >= 31) stopPlay(); }, 170);
+};
+$('#bots').onchange = () => renderSpike(true);
+$('#cap').addEventListener('change', () => { if (cur===3) renderSpike(true); });
+
+// ---------- boot ----------
+setCap(50);
+const start = Math.max(0, screens.indexOf((location.hash||'').slice(1)));
+go(start);
+window.addEventListener('hashchange', () => { const i = screens.indexOf(location.hash.slice(1)); if (i >= 0 && i !== cur) go(i); });
+window.__sim = simulate; // for checking
+})();
+</script>
+</body>
+</html>
