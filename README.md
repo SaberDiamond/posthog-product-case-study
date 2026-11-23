@@ -1,7 +1,7 @@
 # Budget Guard
 
 **🥈 2nd Place | PMC × PostHog Product Case Competition, UC Santa Cruz (November 2026)**  
-**Product management case study · Financial analysis · Interactive prototype · Two-person team**
+**Product management case study · Financial analysis · Interactive prototype**
 
 > **Student competition concept.** Budget Guard is a proposed feature, not an official PostHog product. The competition case, customer stories, and financial data are simulated. The demo uses illustrative prices and synthetic usage data.
 
