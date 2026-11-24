@@ -79,7 +79,7 @@ Competition at UC Santa Cruz (2026).
 
 - **Dhanush Rao**
   - GitHub: [@Dhanushraj M Rao](https://github.com/saberdiamond)
-  - LinkedIn: [Dhanushraj M Rao](https://linkedin.com/in/yourprofile)
+  - LinkedIn: [Dhanushraj M Rao](https://linkedin.com/in/dhanushrao1/)
 
 - **Dinesh Mandapalli**
   - GitHub: [@Dinesh Mandapalli](https://github.com/dineshrishim)
