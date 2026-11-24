@@ -71,3 +71,16 @@ The 57% figure is a **target derived from assumptions**, not a conversion rate a
 Thanks to the **Product Management Club at UC Santa Cruz**, the organizers, and the judges for hosting the competition and providing feedback.
 
 *This project is an independent student case submission. It is not affiliated with or endorsed by PostHog. The original competition packet is not redistributed in this repository.*
+
+## Contributors
+
+This project was developed for the PMC × PostHog Product Case
+Competition at UC Santa Cruz (2026).
+
+- **Dhanush Rao**
+  - GitHub: [@Dhanushraj M Rao](https://github.com/saberdiamond)
+  - LinkedIn: [Dhanushraj M Rao](https://linkedin.com/in/yourprofile)
+
+- **Dinesh Mandapalli**
+  - GitHub: [@Dinesh Mandapalli](https://github.com/dineshrishim)
+  - LinkedIn: [Dinesh Mandapalli](https://www.linkedin.com/in/dineshmandapalli11/)
